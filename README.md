@@ -1,4 +1,4 @@
-# AWS Credit PID Controller
+# Runner Determinator PID Controller
 
 A Python-based PID (Proportional-Integral-Derivative) controller that automatically optimizes the distribution of CI/CD jobs between AWS accounts to maximize credit usage while staying within budget constraints.
 
