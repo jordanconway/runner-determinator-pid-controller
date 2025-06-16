@@ -1,0 +1,7 @@
+requests==2.31.0
+python-dotenv==1.0.1
+urllib3==2.2.1  # Required by requests
+certifi==2024.2.2  # Required by requests
+charset-normalizer==3.3.2  # Required by requests
+idna==3.6  # Required by requests
+simple-pid==1.0.0  # Required for PID controller 
