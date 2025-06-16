@@ -16,7 +16,7 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
   - Output limits (0-100%) to prevent extreme adjustments
   - Automatic shutdown if budget is exceeded
 - **Persistence**: Maintains PID state between runs for smooth operation
-- **Comprehensive Logging & Error Handling**: Improved error logging and consistent error handling for all API calls
+- **Comprehensive Logging & Error Handling**: Improved error logging and consistent error handling for all API calls. Logs are written to both the console and a rotating log file ('controller.log').
 
 ## TODO
 
@@ -76,6 +76,7 @@ The controller will:
 ### Logging
 
 The system provides detailed logging including:
+- Logs are written to both the console and a rotating log file (`controller.log`) in the project directory
 - Current spend vs. ideal spend
 - Target daily spend rate
 - Actual daily spend rate

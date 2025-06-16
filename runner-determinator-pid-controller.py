@@ -18,12 +18,24 @@ import logging
 import requests
 import os
 from dotenv import load_dotenv
+from logging.handlers import RotatingFileHandler
 
 
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+log_formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+logger.addHandler(console_handler)
+
+# File handler with rotation
+file_handler = RotatingFileHandler('controller.log', maxBytes=5*1024*1024, backupCount=3)
+file_handler.setFormatter(log_formatter)
+logger.addHandler(file_handler)
 
 class AWSCreditOptimizer:
     def __init__(self,
