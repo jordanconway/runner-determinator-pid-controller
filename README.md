@@ -24,6 +24,7 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
   - This will allow the PID controller to know the current baseline percentage before making adjustments
   - Need to parse the YAML configuration from the issue's first comment
   - Should update the baseline percentage whenever the issue is updated
+- [ ] Implement automatic setting of LF runner percentage from the above issue.
 
 ## Installation
 
