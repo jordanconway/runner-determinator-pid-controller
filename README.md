@@ -9,13 +9,14 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
 ### Key Features
 
 - **Real-time Spend Monitoring**: Tracks current spend and daily spend rates using the Ternary API
+- **Modular API Integration**: Uses a centralized helper function for all Ternary API queries, reducing code duplication and improving maintainability
 - **PID Control**: Uses a PID controller to make smooth, responsive adjustments to job distribution
 - **Safety Features**:
   - 2% safety margin to prevent overspending
   - Output limits (0-100%) to prevent extreme adjustments
   - Automatic shutdown if budget is exceeded
 - **Persistence**: Maintains PID state between runs for smooth operation
-- **Comprehensive Logging**: Detailed logging for monitoring and tuning
+- **Comprehensive Logging & Error Handling**: Improved error logging and consistent error handling for all API calls
 
 ## TODO
 
@@ -28,8 +29,8 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd <repository-name>
+git clone https://github.com/pytorch/runner-determinator-pid-controller.git
+cd runner-determinator-pid-controller
 ```
 
 2. Install dependencies:
@@ -61,7 +62,7 @@ PID tuning parameters:
 
 To run the controller in production mode:
 ```bash
-python aws-credit-pid.py
+python runner-determinator-pid-controller.py
 ```
 
 The controller will:
