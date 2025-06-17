@@ -10,6 +10,7 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
 
 - **Real-time Spend Monitoring**: Tracks current spend and daily spend rates using the Ternary API
 - **Modular API Integration**: Uses a centralized helper function for all Ternary API queries, reducing code duplication and improving maintainability
+- **Dynamic Rollout Percentage**: Automatically fetches the LF runner rollout percentage from the PyTorch test-infra issue comment and uses it in the PID controller logic
 - **PID Control**: Uses a PID controller to make smooth, responsive adjustments to job distribution
 - **Safety Features**:
   - 2% safety margin to prevent overspending
@@ -20,11 +21,10 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
 
 ## TODO
 
-- [ ] Implement automatic fetching of current LF runner percentage from [pytorch/test-infra#5132](https://github.com/pytorch/test-infra/issues/5132)
-  - This will allow the PID controller to know the current baseline percentage before making adjustments
-  - Need to parse the YAML configuration from the issue's first comment
-  - Should update the baseline percentage whenever the issue is updated
-- [ ] Implement automatic setting of LF runner percentage from the above issue.
+- [x] Implement automatic fetching and setting of current LF runner percentage from [pytorch/test-infra#5132](https://github.com/pytorch/test-infra/issues/5132)
+  - The PID controller now dynamically uses the latest rollout percentage from the issue comment
+  - The YAML configuration is parsed from the issue's first comment
+  - The baseline percentage is updated whenever the script runs
 
 ## Installation
 
@@ -94,7 +94,7 @@ The system provides detailed logging including:
    - Calculates ideal spend trajectory for the month
    - Compares current spend to ideal trajectory
    - Uses PID controller to adjust job distribution
-   - Base percentage starts at 35% and is adjusted by PID output
+   - Base percentage is dynamically set from the rollout percentage fetched from the PyTorch test-infra issue, and is adjusted by PID output
 
 3. **Safety Measures**:
    - Stops routing to LF AWS account if budget is exceeded

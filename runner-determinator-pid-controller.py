@@ -17,6 +17,8 @@ import json
 import logging
 import requests
 import os
+import yaml
+import re
 from dotenv import load_dotenv
 from logging.handlers import RotatingFileHandler
 
@@ -37,15 +39,55 @@ file_handler = RotatingFileHandler('controller.log', maxBytes=5*1024*1024, backu
 file_handler.setFormatter(log_formatter)
 logger.addHandler(file_handler)
 
+class GitHubExperimentParser:
+    def __init__(self, comment_url, repo="pytorch/test-infra", token=None):
+        self.comment_url = comment_url
+        self.repo = repo
+        self.token = token or os.getenv("GITHUB_TOKEN")
+        self.issue_number, self.comment_id = self.extract_comment_info(comment_url)
+
+    @staticmethod
+    def extract_comment_info(url):
+        match = re.search(r'/issues/(\d+)#issuecomment-(\d+)', url)
+        if not match:
+            raise ValueError("Invalid GitHub comment URL")
+        issue_number, comment_id = match.groups()
+        return issue_number, comment_id
+
+    def fetch_comment_body(self):
+        headers = {"Accept": "application/vnd.github.v3+json"}
+        if self.token:
+            headers["Authorization"] = f"token {self.token}"
+        api_url = f"https://api.github.com/repos/{self.repo}/issues/comments/{self.comment_id}"
+        resp = requests.get(api_url, headers=headers)
+        resp.raise_for_status()
+        return resp.json()["body"]
+
+    @staticmethod
+    def parse_rollout_perc(comment_body):
+        yaml_match = re.search(r'(?s)(experiments:.*?)(?:\n\s*\n|$)', comment_body)
+        if not yaml_match:
+            raise ValueError("No YAML experiments block found in comment")
+        yaml_block = yaml_match.group(1)
+        yaml_block = yaml_block.replace('```', '').strip()  # Remove markdown code fences
+        docs = list(yaml.safe_load_all(yaml_block))
+        data = docs[0]
+        return data["experiments"]["lf"]["rollout_perc"]
+
+    def get_lf_rollout_perc(self):
+        comment_body = self.fetch_comment_body()
+        return self.parse_rollout_perc(comment_body)
+
 class AWSCreditOptimizer:
     def __init__(self,
                  total_credits=500000,  # $500k in free credits
                  safety_margin=0.02,    # 2% safety margin
-                 update_interval=3600): # Update every hour
-
+                 update_interval=3600,  # Update every hour
+                 rollout_perc=35):      # Default rollout percentage
         self.total_credits = total_credits
         self.target_credits = total_credits * (1 - safety_margin)  # Target 98% usage
         self.update_interval = update_interval
+        self.rollout_perc = rollout_perc
 
         # PID parameters (these will need tuning based on your system)
         # These values are tuned to track the spending trajectory closely
@@ -78,7 +120,7 @@ class AWSCreditOptimizer:
 
         return ideal_spend, target_daily_spend
 
-    def calculate_percentage_split(self, current_spend, daily_spend_rate, current_date=None):
+    def calculate_percentage_split(self, current_spend, daily_spend_rate, rollout_perc, current_date=None):
         """
         Calculate the percentage of jobs to send to the LF AWS account
 
@@ -118,7 +160,7 @@ class AWSCreditOptimizer:
         # This gives us a more dynamic base to work from
         if daily_spend_rate > 0 and target_daily_spend > 0:
             # Current percentage estimate based on spend rates
-            current_percentage_estimate = 35
+            current_percentage_estimate = rollout_perc
             base_percentage = min(100, max(0, current_percentage_estimate))
         else:
             base_percentage = 50.0
@@ -163,9 +205,9 @@ class AWSCreditOptimizer:
 class AWSCreditController:
     """Production-ready controller with persistence and AWS integration"""
 
-    def __init__(self, config_file='pid_state.json'):
+    def __init__(self, config_file='pid_state.json', rollout_perc=35):
         self.config_file = config_file
-        self.optimizer = AWSCreditOptimizer()
+        self.optimizer = AWSCreditOptimizer(rollout_perc=rollout_perc)
         self.load_state()
         self.tenant_id = 'cc951ada-105f-40b1-8305-c65861490a90'
         self.api_base_url = f'https://api.ternary.app/analytics/query/load?tenant_id={self.tenant_id}'
@@ -332,7 +374,7 @@ class AWSCreditController:
 
             # Calculate new percentage
             percentage = self.optimizer.calculate_percentage_split(
-                current_spend, spend_rate
+                current_spend, spend_rate, self.optimizer.rollout_perc
             )
 
             # Update routing
@@ -350,7 +392,10 @@ class AWSCreditController:
     
 def run_production_controller():
     """Run the production controller"""
-    controller = AWSCreditController()
+    GITHUB_COMMENT_URL = "https://github.com/pytorch/test-infra/issues/5132#issuecomment-2076772891"
+    parser = GitHubExperimentParser(GITHUB_COMMENT_URL)
+    rollout_perc = parser.get_lf_rollout_perc()
+    controller = AWSCreditController(rollout_perc=rollout_perc)
     controller.run_update_cycle()
 
 
