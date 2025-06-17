@@ -79,7 +79,7 @@ The system provides detailed logging including:
 - Logs are written to both the console and a rotating log file (`controller.log`) in the project directory
 - Current spend vs. ideal spend
 - Target daily spend rate
-- Actual daily spend rate
+- Actual daily spend rate (for the previous local calendar day)
 - PID adjustments and components
 - Final routing percentage
 
@@ -87,7 +87,7 @@ The system provides detailed logging including:
 
 1. **Spend Monitoring**:
    - Tracks current month's spend
-   - Calculates daily spend rate from the last 24 hours
+   - Calculates daily spend rate for the previous local calendar day (from 00:00:00.000Z to 23:59:59.000Z)
    - Uses Ternary API for real-time spend data
 
 2. **PID Control**:

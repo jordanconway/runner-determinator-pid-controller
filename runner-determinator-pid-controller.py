@@ -261,37 +261,37 @@ class AWSCreditController:
         Returns:
             float: The current spend in credits (positive number)
         """
-        # Get current UTC time
-        now_utc = datetime.utcnow()
-        end_date = now_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        # Get current local time
+        now_local = datetime.now()
+        end_date = now_local.strftime('%Y-%m-%dT%H:%M:%S') + '.000Z'
         
         # Get start of current month
-        start_of_month = datetime(now_utc.year, now_utc.month, 1)
-        start_date = start_of_month.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        start_of_month = datetime(now_local.year, now_local.month, 1)
+        start_date = start_of_month.strftime('%Y-%m-%dT%H:%M:%S') + '.000Z'
         
         return self._query_ternary_api(start_date, end_date, project_id)
 
     def get_recent_spend_rate(self, project_id="391835788720"):
         """
-        Calculate recent spend rate for the past 24 hours.
-        
+        Calculate recent spend rate for the previous day (local time).
         Args:
             project_id (str): The project ID to get spend for. Defaults to the main project ID.
-        
         Returns:
-            float: The spend rate in credits per day (positive number)
+            float: The spend rate in credits for the previous day (positive number)
         """
-        # Get current UTC time and 24 hours ago
-        now_utc = datetime.utcnow()
-        end_date = now_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        # Get yesterday's date
+        yesterday = datetime.now() - timedelta(days=1)
+        start_date = yesterday.replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%dT%H:%M:%S') + '.000Z'
+        end_date = yesterday.replace(hour=23, minute=59, second=59, microsecond=0).strftime('%Y-%m-%dT%H:%M:%S') + '.000Z'
         
-        # Calculate start date (24 hours ago)
-        start_of_period = now_utc - timedelta(hours=24)
-        start_date = start_of_period.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+        # Debug prints (optional, can be removed)
+        print(f"Start date: {start_date}")
+        print(f"End date: {end_date}")
         
-        # Get spend for last 24 hours and convert to daily rate
-        credits_24h = self._query_ternary_api(start_date, end_date, project_id)
-        return credits_24h * (24/24)  # Multiply by 24/24 for clarity of intent
+        # Get spend for yesterday
+        credits_yesterday = self._query_ternary_api(start_date, end_date, project_id)
+        print(f"Credits yesterday: {credits_yesterday}")
+        return credits_yesterday
 
     def load_state(self):
         """Load PID state from file to maintain continuity"""
