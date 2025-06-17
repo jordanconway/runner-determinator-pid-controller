@@ -21,10 +21,12 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
 
 ## TODO
 
-- [x] Implement automatic fetching and setting of current LF runner percentage from [pytorch/test-infra#5132](https://github.com/pytorch/test-infra/issues/5132)
+- [x] Implement automatic fetching of current LF runner percentage from [pytorch/test-infra#5132](https://github.com/pytorch/test-infra/issues/5132)
   - The PID controller now dynamically uses the latest rollout percentage from the issue comment
   - The YAML configuration is parsed from the issue's first comment
   - The baseline percentage is updated whenever the script runs
+- [ ] Implement automatic setting of LF runner percentage on GitHub
+  - The script does not yet update the rollout percentage back to the GitHub issue
 
 ## Installation
 
