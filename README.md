@@ -17,7 +17,9 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
   - Output limits (0-100%) to prevent extreme adjustments
   - Automatic shutdown if budget is exceeded
 - **Persistence**: Maintains PID state between runs for smooth operation
-- **Comprehensive Logging & Error Handling**: Improved error logging and consistent error handling for all API calls. Logs are written to both the console and a rotating log file ('controller.log').
+- **Comprehensive Logging & Error Handling**: Improved error logging and consistent error handling for all API calls. Logs are written to both the console and a rotating log file ('controller.log')
+- **Code Quality**: Fully compliant with pylint standards, including proper line length limits, no trailing whitespace, and optimized control flow
+
 
 ## TODO
 
@@ -25,6 +27,7 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
   - The PID controller now dynamically uses the latest rollout percentage from the issue comment
   - The YAML configuration is parsed from the issue's first comment
   - The baseline percentage is updated whenever the script runs
+- [x] Code quality improvements and pylint compliance
 - [ ] Implement automatic setting of LF runner percentage on GitHub
   - The script does not yet update the rollout percentage back to the GitHub issue
 
@@ -33,7 +36,7 @@ This system uses a PID controller to dynamically adjust the percentage of CI/CD 
 1. Clone the repository:
 ```bash
 git clone https://github.com/pytorch/runner-determinator-pid-controller.git
-cd runner-determinator-pid-controller
+cd runner_determinator_pid_controller
 ```
 
 2. Install dependencies:
@@ -65,7 +68,7 @@ PID tuning parameters:
 
 To run the controller in production mode:
 ```bash
-python runner-determinator-pid-controller.py
+python runner_determinator_pid_controller.py
 ```
 
 The controller will:
@@ -125,6 +128,16 @@ For production use:
 3. Adjust PID parameters based on observed behavior
 4. Ensure the `.env` file is properly secured
 
+## Code Quality
+
+This project maintains high code quality standards:
+- All code passes pylint checks
+- Proper line length limits (79 characters)
+- No trailing whitespace
+- Optimized control flow
+- Comprehensive error handling
+- Clear and maintainable code structure
+
 ## Contributing
 
 1. Fork the repository
@@ -132,6 +145,8 @@ For production use:
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
+
+**Note**: Please ensure your code passes pylint checks before submitting a pull request.
 
 ## License
 
