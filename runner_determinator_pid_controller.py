@@ -10,6 +10,7 @@ Automatically adjusts the percentage of CI jobs sent to the LF AWS account
 to maximize credit usage without exceeding the budget.
 """
 
+import argparse
 from datetime import datetime, timedelta
 import json
 import logging
@@ -18,7 +19,7 @@ from logging.handlers import RotatingFileHandler
 import re
 import yaml
 import requests
-from simple_pid import PID
+from simple_pid.PID import PID
 
 
 
@@ -255,6 +256,8 @@ class AWSCreditOptimizer:
 
         # Calculate PID adjustment and final percentage
         pid_adjustment = self.pid(-error_percentage)
+        if pid_adjustment is None:
+            pid_adjustment = 0
         adjustment = max(0, min(100, base_percentage + pid_adjustment))
 
         # Prepare calculation data for logging
@@ -280,16 +283,16 @@ class AWSCreditOptimizer:
     def update_pid_tuning(self, Kp=None, Ki=None, Kd=None): # pylint: disable=invalid-name
         """Adjust PID parameters if needed"""
         if Kp is not None:
-            self.pid.Kp = Kp
+            self.pid.Kp = Kp  # type: ignore
         if Ki is not None:
-            self.pid.Ki = Ki
+            self.pid.Ki = Ki  # type: ignore
         if Kd is not None:
-            self.pid.Kd = Kd
+            self.pid.Kd = Kd  # type: ignore
         logger.info(
             "Updated PID tuning: Kp=%.2f, Ki=%.2f, Kd=%.2f",
-            self.pid.Kp,
-            self.pid.Ki,
-            self.pid.Kd,
+            self.pid.Kp,  # type: ignore
+            self.pid.Ki,  # type: ignore
+            self.pid.Kd,  # type: ignore
         )
 
 
@@ -299,9 +302,10 @@ class AWSCreditOptimizer:
 class AWSCreditController:
     """Production-ready controller with persistence, AWS integration, and job routing logic."""
 
-    def __init__(self, config_file='pid_state.json', rollout_perc=35):
+    def __init__(self, config_file='pid_state.json', rollout_perc=35, days=1):
         self.config_file = config_file
         self.optimizer = AWSCreditOptimizer(rollout_perc=rollout_perc)
+        self.days = days
         self.load_state()
         self.tenant_id = 'cc951ada-105f-40b1-8305-c65861490a90'
         self.api_base_url = (
@@ -417,24 +421,26 @@ class AWSCreditController:
 
         return self._query_ternary_api(start_date, end_date, project_id)
 
-    def get_recent_spend_rate(self, project_id="391835788720"):
+    def get_recent_spend_rate(self, project_id="391835788720", days=1):
         """
-        Calculate recent spend rate for the previous day (local time).
+        Calculate recent spend rate for the specified number of days (local time).
         Args:
             project_id (str): The project ID to get spend for.
                              Defaults to the main project ID.
+            days (int): Number of days to look back for spend rate calculation.
+                       Defaults to 1 day.
         Returns:
-            float: The spend rate in credits for the previous day (positive number)
+            float: The spend rate in credits per day for the specified period (positive number)
         """
-        # Get yesterday's date
-        yesterday = datetime.now() - timedelta(days=1)
+        # Calculate the start date based on the specified number of days
+        start_date_calc = datetime.now() - timedelta(days=days)
         start_date = (
-            yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
+            start_date_calc.replace(hour=0, minute=0, second=0, microsecond=0)
             .strftime('%Y-%m-%dT%H:%M:%S')
             + '.000Z'
         )
         end_date = (
-            yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
+            start_date_calc.replace(hour=23, minute=59, second=59, microsecond=0)
             .strftime('%Y-%m-%dT%H:%M:%S')
             + '.000Z'
         )
@@ -443,12 +449,13 @@ class AWSCreditController:
         print(f"Start date: {start_date}")
         print(f"End date: {end_date}")
 
-        # Get spend for yesterday
-        credits_yesterday = self._query_ternary_api(
+        # Get spend for the specified period and calculate daily rate
+        credits_period = self._query_ternary_api(
             start_date, end_date, project_id
         )
-        print(f"Credits yesterday: {credits_yesterday}")
-        return credits_yesterday
+        daily_rate = credits_period / days
+        print(f"Credits for {days} day(s): {credits_period}, Daily rate: {daily_rate}")
+        return daily_rate
 
     def load_state(self):
         """Load PID state from file to maintain continuity"""
@@ -457,7 +464,7 @@ class AWSCreditController:
                 state = json.load(f)
                 # Restore PID integral term for smooth continuation
                 if 'integral' in state:
-                    self.optimizer.pid._integral = state['integral']  # pylint: disable=protected-access
+                    self.optimizer.pid._integral = state['integral']  # type: ignore # pylint: disable=protected-access
                 logger.info("Loaded previous PID state")
         except FileNotFoundError:
             logger.info("No previous state found, starting fresh")
@@ -465,7 +472,7 @@ class AWSCreditController:
     def save_state(self):
         """Save PID state for next run"""
         state = {
-            'integral': self.optimizer.pid._integral,  # pylint: disable=protected-access
+            'integral': self.optimizer.pid._integral,  # type: ignore # pylint: disable=protected-access
             'last_update': datetime.now().isoformat(),
             'components': self.optimizer.pid.components
         }
@@ -487,7 +494,7 @@ class AWSCreditController:
         try:
             # Get current metrics
             current_spend = self.get_current_spend()
-            spend_rate = self.get_recent_spend_rate()
+            spend_rate = self.get_recent_spend_rate(days=self.days)
 
             # Calculate new percentage
             percentage = self.optimizer.calculate_percentage_split(
@@ -510,7 +517,7 @@ class AWSCreditController:
             logger.error("Error in update cycle: %s", e)
             # In production, send alert to ops team
 
-def run_production_controller():
+def run_production_controller(days=1):
     """Run the production controller"""
     github_comment_url = (
         "https://github.com/pytorch/test-infra/issues/5132"
@@ -518,13 +525,25 @@ def run_production_controller():
     )
     parser = GitHubExperimentParser(github_comment_url)
     rollout_perc = parser.get_lf_rollout_perc()
-    controller = AWSCreditController(rollout_perc=rollout_perc)
+    controller = AWSCreditController(rollout_perc=rollout_perc, days=days)
     controller.run_update_cycle()
 
 
 if __name__ == "__main__":
-    # Run the production controller
-    run_production_controller()
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description="AWS Credit Optimization using PID Controller"
+    )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=1,
+        help="Number of days to look back for spend rate calculation (default: 1)"
+    )
+    args = parser.parse_args()
+
+    # Run the production controller with the specified days
+    run_production_controller(days=args.days)
 
     # Example of production usage:
     # controller = AWSCreditController()

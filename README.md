@@ -57,6 +57,9 @@ The system can be configured through several parameters in the `AWSCreditOptimiz
 - `safety_margin`: Safety margin as a decimal (default: 0.02 for 2%)
 - `update_interval`: How often to update in seconds (default: 3600 for hourly)
 
+**Command Line Options:**
+- `--days`: Number of days to look back for spend rate calculation (default: 1)
+
 PID tuning parameters:
 - `Kp`: Proportional gain (default: 2.0)
 - `Ki`: Integral gain (default: 0.15)
@@ -71,9 +74,21 @@ To run the controller in production mode:
 python runner_determinator_pid_controller.py
 ```
 
+To specify the number of days to look back for spend rate calculation:
+```bash
+# Use 7 days for spend rate calculation (default is 1 day)
+python runner_determinator_pid_controller.py --days 7
+
+# Use 30 days for spend rate calculation
+python runner_determinator_pid_controller.py --days 30
+
+# Show help and available options
+python runner_determinator_pid_controller.py --help
+```
+
 The controller will:
 1. Load previous state (if any)
-2. Get current spend and spend rate
+2. Get current spend and spend rate (based on the specified number of days)
 3. Calculate optimal job distribution
 4. Update the routing configuration
 5. Save state for the next run
@@ -92,7 +107,7 @@ The system provides detailed logging including:
 
 1. **Spend Monitoring**:
    - Tracks current month's spend
-   - Calculates daily spend rate for the previous local calendar day (from 00:00:00.000Z to 23:59:59.000Z)
+   - Calculates daily spend rate for the specified number of days (configurable via `--days` parameter, default: 1 day)
    - Uses Ternary API for real-time spend data
 
 2. **PID Control**:
