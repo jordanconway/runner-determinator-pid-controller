@@ -58,7 +58,7 @@ The system can be configured through several parameters in the `AWSCreditOptimiz
 - `update_interval`: How often to update in seconds (default: 3600 for hourly)
 
 **Command Line Options:**
-- `--days`: Number of days to look back for spend rate calculation (default: 1)
+- `--days`: Number of days to look back for calculating average daily spend rate (default: 1)
 
 PID tuning parameters:
 - `Kp`: Proportional gain (default: 2.0)
@@ -74,12 +74,12 @@ To run the controller in production mode:
 python runner_determinator_pid_controller.py
 ```
 
-To specify the number of days to look back for spend rate calculation:
+To specify the number of days to look back for calculating average daily spend rate:
 ```bash
-# Use 7 days for spend rate calculation (default is 1 day)
+# Use 7 days for average daily spend rate calculation (default is 1 day)
 python runner_determinator_pid_controller.py --days 7
 
-# Use 30 days for spend rate calculation
+# Use 30 days for average daily spend rate calculation
 python runner_determinator_pid_controller.py --days 30
 
 # Show help and available options
@@ -88,7 +88,7 @@ python runner_determinator_pid_controller.py --help
 
 The controller will:
 1. Load previous state (if any)
-2. Get current spend and spend rate (based on the specified number of days)
+2. Get current spend and average daily spend rate (based on the specified number of days)
 3. Calculate optimal job distribution
 4. Update the routing configuration
 5. Save state for the next run
@@ -99,7 +99,7 @@ The system provides detailed logging including:
 - Logs are written to both the console and a rotating log file (`controller.log`) in the project directory
 - Current spend vs. ideal spend
 - Target daily spend rate
-- Actual daily spend rate (for the previous local calendar day)
+- Actual average daily spend rate (over the specified number of days)
 - PID adjustments and components
 - Final routing percentage
 
@@ -107,7 +107,7 @@ The system provides detailed logging including:
 
 1. **Spend Monitoring**:
    - Tracks current month's spend
-   - Calculates daily spend rate for the specified number of days (configurable via `--days` parameter, default: 1 day)
+   - Calculates average daily spend rate over the specified number of days (configurable via `--days` parameter, default: 1 day)
    - Uses Ternary API for real-time spend data
 
 2. **PID Control**:
@@ -169,4 +169,4 @@ This project maintains high code quality standards:
 
 ## Support
 
-[Add support contact information here] 
+[Add support contact information here]

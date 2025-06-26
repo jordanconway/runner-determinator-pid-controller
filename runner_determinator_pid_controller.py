@@ -430,7 +430,7 @@ class AWSCreditController:
             days (int): Number of days to look back for spend rate calculation.
                        Defaults to 1 day.
         Returns:
-            float: The spend rate in credits per day for the specified period (positive number)
+            float: The average spend rate in credits per day for the specified period (positive number)
         """
         # Calculate the start date based on the specified number of days
         start_date_calc = datetime.now() - timedelta(days=days)
@@ -439,22 +439,19 @@ class AWSCreditController:
             .strftime('%Y-%m-%dT%H:%M:%S')
             + '.000Z'
         )
-        end_date = (
-            start_date_calc.replace(hour=23, minute=59, second=59, microsecond=0)
-            .strftime('%Y-%m-%dT%H:%M:%S')
-            + '.000Z'
-        )
+        # Use current time as end date to get spend up to now
+        end_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%S') + '.000Z'
 
         # Debug prints (optional, can be removed)
         print(f"Start date: {start_date}")
         print(f"End date: {end_date}")
 
-        # Get spend for the specified period and calculate daily rate
+        # Get spend for the specified period and calculate average daily rate
         credits_period = self._query_ternary_api(
             start_date, end_date, project_id
         )
         daily_rate = credits_period / days
-        print(f"Credits for {days} day(s): {credits_period}, Daily rate: {daily_rate}")
+        print(f"Credits for {days} day(s): {credits_period}, Average daily rate: {daily_rate}")
         return daily_rate
 
     def load_state(self):
