@@ -430,7 +430,8 @@ class AWSCreditController:
             days (int): Number of days to look back for spend rate calculation.
                        Defaults to 1 day.
         Returns:
-            float: The average spend rate in credits per day for the specified period (positive number)
+            float: The average spend rate in credits per day for the
+                     specified period (positive number)
         """
         # Calculate the start date based on the specified number of days
         start_date_calc = datetime.now() - timedelta(days=days)
@@ -520,8 +521,8 @@ def run_production_controller(days=1):
         "https://github.com/pytorch/test-infra/issues/5132"
         "#issuecomment-2076772891"
     )
-    parser = GitHubExperimentParser(github_comment_url)
-    rollout_perc = parser.get_lf_rollout_perc()
+    github_parser = GitHubExperimentParser(github_comment_url)
+    rollout_perc = github_parser.get_lf_rollout_perc()
     controller = AWSCreditController(rollout_perc=rollout_perc, days=days)
     controller.run_update_cycle()
 
