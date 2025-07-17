@@ -111,17 +111,17 @@ class AWSCreditOptimizer:
         # PID parameters (these will need tuning based on your system)
         # These values are tuned to track the spending trajectory closely
         # Proportional gain - responds to current error
-        Kp = 2.0    # pylint: disable=invalid-name
+        Kp = 0.005    # pylint: disable=invalid-name
         # Integral gain - corrects accumulated error
-        Ki = 0.15   # pylint: disable=invalid-name
+        Ki = 0.0001   # pylint: disable=invalid-name
         # Derivative gain - dampens oscillations
-        Kd = 0.5    # pylint: disable=invalid-name
+        Kd = 0.001    # pylint: disable=invalid-name
 
         # Initialize PID controller
         # Output will be the adjustment to the base percentage
-        self.pid = PID(Kp, Ki, Kd, setpoint=0)
+        self.pid = PID(Kp, Ki, Kd)
         # Allow adjustments in both directions
-        self.pid.output_limits = (-40, 40)
+        self.pid.output_limits = (-100, 100)
 
         # Track last update time for proper integral calculation
         self.last_update_time = None
@@ -254,11 +254,14 @@ class AWSCreditOptimizer:
             daily_spend_rate, target_daily_spend, rollout_perc
         )
 
+        # Update PID setpoint
+        self.pid.setpoint = target_daily_spend
+
         # Calculate PID adjustment and final percentage
-        pid_adjustment = self.pid(error_percentage)
+        pid_adjustment = self.pid(daily_spend_rate)
         if pid_adjustment is None:
             pid_adjustment = 0
-        adjustment = max(0, min(100, base_percentage + pid_adjustment))
+        adjustment = max(0, min(100, rollout_perc + pid_adjustment))
 
         # Prepare calculation data for logging
         calculation_data = {
