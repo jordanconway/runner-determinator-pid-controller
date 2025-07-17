@@ -255,7 +255,7 @@ class AWSCreditOptimizer:
         )
 
         # Calculate PID adjustment and final percentage
-        pid_adjustment = self.pid(-error_percentage)
+        pid_adjustment = self.pid(error_percentage)
         if pid_adjustment is None:
             pid_adjustment = 0
         adjustment = max(0, min(100, base_percentage + pid_adjustment))
